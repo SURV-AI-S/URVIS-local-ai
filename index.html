@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URVIS Local AI</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <canvas id="particle-canvas" aria-hidden="true"></canvas>
+  <div class="ambient-shards" aria-hidden="true">
+    <span class="shard shard-a"></span>
+    <span class="shard shard-b"></span>
+    <span class="shard shard-c"></span>
+    <span class="shard shard-d"></span>
+  </div>
+
+  <div class="app-shell">
+    <header class="top-header">
+      <div class="brand-block">
+        <div class="brand-mark">U</div>
+        <div>
+          <h1>URVIS Local AI</h1>
+          <p>Your local coding companion</p>
+        </div>
+      </div>
+
+      <div class="status-row" aria-live="polite">
+        <span class="status-chip is-blue">Local Mode</span>
+        <span class="status-chip">Private on this machine</span>
+        <span id="ollama-status" class="status-chip is-waiting">Έλεγχος Ollama</span>
+        <span id="model-status" class="status-chip is-waiting">Model Ready</span>
+      </div>
+
+      <div class="header-actions">
+        <button id="new-chat-button" class="icon-button" type="button" title="Νέα συνομιλία" aria-label="Νέα συνομιλία">+</button>
+        <button id="export-button" class="icon-button" type="button" title="Εξαγωγή συνομιλίας" aria-label="Εξαγωγή συνομιλίας">⇩</button>
+        <button id="clear-button" class="icon-button" type="button" title="Καθαρισμός συνομιλίας" aria-label="Καθαρισμός συνομιλίας">×</button>
+        <button id="settings-button" class="icon-button" type="button" title="Ρυθμίσεις" aria-label="Ρυθμίσεις">⚙</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar left-sidebar" aria-label="Λειτουργίες">
+        <div class="panel-title">Λειτουργίες</div>
+        <nav class="mode-list" id="mode-list">
+          <button class="mode-button is-active" type="button" data-mode="chat">Chat</button>
+          <button class="mode-button" type="button" data-mode="explain">Code Explain</button>
+          <button class="mode-button" type="button" data-mode="refactor">Refactor</button>
+          <button class="mode-button" type="button" data-mode="debug">Debug Errors</button>
+          <button class="mode-button" type="button" data-mode="script">Script Generator</button>
+          <button class="mode-button" type="button" data-mode="library">Prompt Library</button>
+          <button class="mode-button" type="button" data-mode="settings">Settings</button>
+        </nav>
+
+        <section class="side-card prompt-card">
+          <h2>Τρέχων Βοηθός</h2>
+          <p id="mode-description">Γενική συνομιλία για Unity C#, debugging και πρακτική ανάπτυξη λογισμικού.</p>
+        </section>
+
+        <section class="side-card">
+          <h2>Γρήγορα πρότυπα</h2>
+          <div class="template-stack">
+            <button class="small-button" type="button" data-template="snippet">Paste Snippet</button>
+            <button class="small-button" type="button" data-template="debug">Debug Error</button>
+            <button class="small-button" type="button" data-template="unity">Unity Script</button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="chat-panel" aria-label="Συνομιλία">
+        <div id="chat-log" class="chat-log" aria-live="polite"></div>
+
+        <form id="chat-form" class="composer">
+          <div class="composer-tools">
+            <button class="ghost-button" type="button" data-template="snippet">Paste Snippet</button>
+            <button class="ghost-button" type="button" data-template="debug">Debug Error</button>
+            <button class="ghost-button" type="button" data-template="unity">Unity Script</button>
+            <button id="stop-button" class="ghost-button danger-button" type="button" hidden>Stop generating</button>
+          </div>
+          <div class="input-wrap">
+            <textarea id="message-input" rows="4" placeholder="Γράψε ερώτηση ή επικόλλησε κώδικα / Unity Console error..."></textarea>
+            <button id="send-button" class="send-button" type="submit">Send</button>
+          </div>
+        </form>
+      </section>
+
+      <aside class="sidebar right-sidebar" aria-label="URVIS Core">
+        <section class="presence-card">
+          <div class="panel-title">URVIS Core</div>
+          <div id="ai-core" class="ai-core" aria-hidden="true">
+            <span class="core-ring ring-one"></span>
+            <span class="core-ring ring-two"></span>
+            <span class="core-orb"></span>
+          </div>
+          <h2>AI Presence</h2>
+          <p>Τοπικός βοηθός για καθαρή σκέψη, κώδικα και ασφαλείς αλλαγές.</p>
+        </section>
+
+        <section class="side-card">
+          <h2>Δυνατότητες</h2>
+          <div class="chip-grid">
+            <span>Explain Code</span>
+            <span>Refactor Snippets</span>
+            <span>Generate Unity Scripts</span>
+            <span>Debug Errors</span>
+            <span>Comment Code</span>
+            <span>Brainstorm Systems</span>
+          </div>
+          <p class="honest-note">I work best with pasted code, errors, and direct questions.</p>
+        </section>
+
+        <section class="side-card info-card">
+          <h2>Μοντέλο</h2>
+          <dl>
+            <div>
+              <dt>Επιλεγμένο</dt>
+              <dd id="selected-model-label">qwen2.5-coder:7b-instruct</dd>
+            </div>
+            <div>
+              <dt>Μηνύματα</dt>
+              <dd id="message-count">0</dd>
+            </div>
+            <div>
+              <dt>Πρόσβαση</dt>
+              <dd>Local only</dd>
+            </div>
+            <div>
+              <dt>Αρχεία</dt>
+              <dd>No files accessed automatically</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="side-card">
+          <h2>Συνεδρία</h2>
+          <label class="file-import">
+            Import Chat
+            <input id="import-input" type="file" accept="application/json" />
+          </label>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <div id="settings-modal" class="modal-backdrop" hidden>
+    <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="modal-header">
+        <div>
+          <h2 id="settings-title">Ρυθμίσεις URVIS</h2>
+          <p>Τοπική σύνδεση με Ollama / IPEX-LLM.</p>
+        </div>
+        <button id="close-settings-button" class="icon-button" type="button" aria-label="Κλείσιμο">×</button>
+      </div>
+
+      <form id="settings-form" class="settings-form">
+        <label>
+          Ollama host URL
+          <input id="host-input" type="url" required />
+        </label>
+
+        <label>
+          Μοντέλο από Ollama
+          <select id="model-select"></select>
+        </label>
+
+        <label>
+          Manual model fallback
+          <input id="manual-model-input" type="text" placeholder="qwen2.5-coder:7b-instruct" />
+        </label>
+
+        <div class="settings-grid">
+          <label>
+            Temperature
+            <input id="temperature-input" type="range" min="0" max="1.5" step="0.05" />
+            <span id="temperature-value" class="setting-value">0.35</span>
+          </label>
+
+          <label>
+            Max tokens / num_predict
+            <input id="max-tokens-input" type="number" min="64" max="8192" step="64" />
+          </label>
+        </div>
+
+        <label>
+          System prompt
+          <textarea id="system-prompt-input" rows="7"></textarea>
+        </label>
+
+        <div class="modal-actions">
+          <button id="reset-settings-button" class="ghost-button" type="button">Reset settings</button>
+          <button class="send-button" type="submit">Save settings</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
